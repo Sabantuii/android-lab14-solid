@@ -57,7 +57,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     // Retrofit для работы с сетью
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     // Gson для преобразования JSON → Kotlin объекты

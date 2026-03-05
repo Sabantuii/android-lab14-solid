@@ -8,41 +8,35 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.lr_11_jetcom.data.model.Post
 import com.example.lr_11_jetcom.data.remote.RetrofitClient
+import com.example.lr_11_jetcom.ui.viewmodel.PostListViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PostListScreen() {
-    var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+fun PostListScreen(
+    viewModel: PostListViewModel
+) {
+    // SRP: Только наблюдаем за состоянием из ViewModel
+    val uiState by viewModel.uiState.collectAsState()
 
+    // Запускаем загрузку при первом входе
     LaunchedEffect(Unit) {
-        isLoading = true
-        errorMessage = null
-
-        try {
-            val list = withContext(Dispatchers.IO) {
-                RetrofitClient.postApi.getPosts(page = 1, limit = 20)
-            }
-            posts = list
-        } catch (e: Exception) {
-            errorMessage = e.message ?: "Ошибка загрузки"
-        } finally {
-            isLoading = false
-        }
+        viewModel.loadPosts()
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Посты") })
+            TopAppBar(title = { Text("Посты (SOLID)") })
         }
     ) { paddingValues ->
         when {
-            isLoading -> {
+            // SRP: Только отображение состояния загрузки
+            uiState.isLoading -> {
                 Box(
                     Modifier
                         .fillMaxSize()
@@ -53,7 +47,8 @@ fun PostListScreen() {
                 }
             }
 
-            errorMessage != null -> {
+            // SRP: Только отображение ошибки
+            uiState.error != null -> {
                 Box(
                     Modifier
                         .fillMaxSize()
@@ -61,12 +56,13 @@ fun PostListScreen() {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = errorMessage!!,
+                        text = uiState.error!!,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
             }
 
+            // SRP: Только отображение списка
             else -> {
                 LazyColumn(
                     modifier = Modifier
@@ -75,7 +71,7 @@ fun PostListScreen() {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(16.dp)
                 ) {
-                    items(posts, key = { it.id }) { post ->
+                    items(uiState.posts, key = { it.id }) { post ->
                         PostItem(post = post)
                     }
                 }
@@ -84,6 +80,7 @@ fun PostListScreen() {
     }
 }
 
+// SRP: Отдельная функция для элемента списка
 @Composable
 fun PostItem(post: Post) {
     Card(
